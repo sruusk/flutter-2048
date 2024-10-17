@@ -1,0 +1,224 @@
+import 'package:flame/components.dart';
+import 'package:flame/events.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:flutter_2048/flat_button.dart';
+import 'package:flutter_2048/score_box.dart';
+import 'package:flutter_2048/tile.dart';
+import 'game.dart';
+import 'grid.dart';
+
+class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, DragCallbacks {
+  final gridSize = Game2048.gridSize;
+  final tileSize = Game2048.tileSize;
+  final tilePadding = Game2048.tilePadding;
+
+  final List<Tile> tiles = [];
+  final double tileMoveDuration = 0.1;
+  late ScoreBox scoreBox;
+  Offset offset = Offset.zero;
+  int score = 0;
+  bool gameOver = false;
+  bool moving = false;
+
+  World2048() {
+    // Calculate the offset to center the grid
+    final gridWidth = gridSize * (tileSize.x + tilePadding) - tilePadding;
+    final gridHeight = gridSize * (tileSize.y + tilePadding) - tilePadding;
+    final offsetX = gridWidth / 2;
+    final offsetY = gridHeight / 2;
+    offset = Offset(-offsetX, -offsetY);
+  }
+
+  @override
+  void onLoad() {
+    super.onLoad();
+    debugPrint('Loading world');
+
+    add(Grid(gridSize: gridSize, tileSize: tileSize.x, tilePadding: tilePadding, offset: offset));
+    addTile();
+    addTile();
+    add(KeyboardListenerComponent(
+      keyUp: {
+        LogicalKeyboardKey.arrowUp: (keysPressed) {
+          debugPrint('Up');
+          move(0, -1);
+          return true;
+        },
+        LogicalKeyboardKey.arrowDown: (keysPressed) {
+          debugPrint('Down');
+          move(0, 1);
+          return true;
+        },
+        LogicalKeyboardKey.arrowLeft: (keysPressed) {
+          debugPrint('Left');
+          move(-1, 0);
+          return true;
+        },
+        LogicalKeyboardKey.arrowRight: (keysPressed) {
+          debugPrint('Right');
+          move(1, 0);
+          return true;
+        },
+      }
+    ));
+
+    double buttonY = offset.dy + gridSize * (tileSize.x + tilePadding) + 50;
+
+    addButton('Restart', Vector2(0, buttonY), Vector2(100, 50), () {
+      debugPrint('Restarting game');
+      game.world = World2048();
+    });
+
+    scoreBox = ScoreBox(
+      title: 'Flutter 2048',
+      score: score,
+      position: Vector2(offset.dx / 2, offset.dy),
+      size: Vector2(gridSize * (tileSize.x + tilePadding) - tilePadding, 100),
+    );
+    add(scoreBox);
+  }
+
+  Vector2 dragEvent = Vector2.zero();
+  @override
+  void onDragStart(DragStartEvent event) {
+    dragEvent = Vector2.zero();
+  }
+  @override
+  void onDragUpdate(DragUpdateEvent event) {
+    dragEvent += event.delta;
+  }
+  @override
+  void onDragEnd(DragEndEvent event) {
+    if (dragEvent.x.abs() > dragEvent.y.abs()) {
+      if (dragEvent.x > 0) {
+        move(1, 0);
+      } else {
+        move(-1, 0);
+      }
+    } else {
+      if (dragEvent.y > 0) {
+        move(0, 1);
+      } else {
+        move(0, -1);
+      }
+    }
+  }
+
+  bool canAddTile() {
+    return tiles.length < gridSize * gridSize;
+  }
+
+  void addTile() {
+    if (!canAddTile()) {
+      return;
+    }
+    final allTilePositions = List.generate(gridSize, (index) => index)
+        .expand((x) => List.generate(gridSize, (index) => index).map((y) => Vector2(x.toDouble(), y.toDouble())))
+        .toList();
+    final occupiedTilePositions = tiles.map((tile) => tile.gridPosition).toList();
+    final emptyTilePositions = allTilePositions.where((position) => !occupiedTilePositions.contains(position)).toList();
+
+    final emptyTile = emptyTilePositions[Game2048.random.nextInt(emptyTilePositions.length)];
+    final value = Game2048.random.nextDouble() < 0.9 ? 2 : 4;
+    final tile = Tile(
+      position: Tile.calculatePosition(emptyTile, tileSize, tilePadding, offset),
+      value: value,
+      offset: offset,
+      gridPosition: emptyTile.clone(),
+    );
+
+    debugPrint('Adding tile at $emptyTile with value $value');
+    tiles.add(tile);
+    add(tile);
+  }
+
+  void addButton(String label, Vector2 position, Vector2 size, void Function() onTap) {
+    final button = FlatButton(
+      label,
+      size: size,
+      position: position,
+      onReleased: onTap,
+    );
+    add(button);
+  }
+
+  bool isGameOver() {
+    if (tiles.length < gridSize * gridSize) {
+      return false;
+    }
+
+    for (var tile in tiles) {
+      final x = tile.gridPosition.x.toInt();
+      final y = tile.gridPosition.y.toInt();
+      final value = tile.value;
+
+      if (x > 0 && tiles.any((t) => t.gridPosition.x.toInt() == x - 1 && t.gridPosition.y.toInt() == y && t.value == value)) {
+        return false;
+      }
+      if (x < gridSize - 1 && tiles.any((t) => t.gridPosition.x.toInt() == x + 1 && t.gridPosition.y.toInt() == y && t.value == value)) {
+        return false;
+      }
+      if (y > 0 && tiles.any((t) => t.gridPosition.x.toInt() == x && t.gridPosition.y.toInt() == y - 1 && t.value == value)) {
+        return false;
+      }
+      if (y < gridSize - 1 && tiles.any((t) => t.gridPosition.x.toInt() == x && t.gridPosition.y.toInt() == y + 1 && t.value == value)) {
+        return false;
+      }
+    }
+
+    return true;
+  }
+
+  void move(int dx, int dy) async {
+    if (gameOver || moving) {
+      return;
+    }
+    bool moved = false;
+
+    // Reset merged flag for all tiles
+    for (var tile in tiles) {
+      tile.merged = false;
+    }
+
+    // Sort tiles based on the direction of movement
+    tiles.sort((a, b) {
+      if (dx == 1) return b.gridPosition.x.compareTo(a.gridPosition.x); // Right
+      if (dx == -1) return a.gridPosition.x.compareTo(b.gridPosition.x); // Left
+      if (dy == 1) return b.gridPosition.y.compareTo(a.gridPosition.y); // Down
+      if (dy == -1) return a.gridPosition.y.compareTo(b.gridPosition.y); // Up
+      return 0;
+    });
+
+    for (var tile in tiles) {
+      if (tile.move(dx, dy)) {
+        moved = true;
+      }
+    }
+
+    if (moved) {
+      moving = true;
+      List<Future<void>> moveFutures = [];
+      for (var tile in tiles) {
+        moveFutures.add(tile.updatePosition());
+      }
+      await Future.wait(moveFutures);
+      addTile();
+      moving = false;
+      if(isGameOver()) {
+        debugPrint('Game over');
+        gameOver = true;
+      }
+    }
+
+    // Remove tiles after animation
+    for (var tile in tiles) {
+      if (tile.markedForRemoval) {
+        score += tile.value * 2;
+        scoreBox.updateScore(score);
+        remove(tile);
+      }
+    }
+    tiles.removeWhere((tile) => tile.markedForRemoval);
+  }
+}

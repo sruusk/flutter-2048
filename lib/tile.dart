@@ -1,0 +1,127 @@
+import 'package:flame/components.dart';
+import 'package:flame/effects.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_2048/game.dart';
+import 'package:flutter_2048/world.dart';
+
+class Tile extends PositionComponent with HasWorldReference<World2048> {
+  int value;
+  Vector2 gridPosition;
+  Offset offset;
+  bool markedForRemoval = false; // Whether this tile should be removed from the grid in the next update
+  bool merged = false; // Whether this tile has been merged with another tile during this move
+
+  Tile({super.position, required this.value, required this.offset, required this.gridPosition}) : super(size: Game2048.tileSize);
+
+  static Vector2 calculatePosition(Vector2 gridPosition, Vector2 tileSize, double tilePadding, Offset offset) {
+    return Vector2(offset.dx, offset.dy) / 2 + gridPosition * (tileSize.x / 2 + tilePadding / 2);
+  }
+
+  bool move(int dx, int dy) {
+    bool moved = false;
+    int maxLoops = world.gridSize * world.gridSize;
+    Vector2 newGridPosition = gridPosition.clone();
+
+    while (true) {
+      maxLoops--;
+      if (maxLoops <= 0) {
+        debugPrint('Max loops reached');
+        break;
+      }
+      final newX = newGridPosition.x + dx;
+      final newY = newGridPosition.y + dy;
+
+      // Check if the new position is within the grid boundaries
+      if (newX < 0 || newX >= world.gridSize || newY < 0 || newY >= world.gridSize) {
+        break;
+      }
+
+      // Check if the target position is occupied by another tile
+      final targetTile = world.tiles.firstWhere(
+        (tile) => tile.gridPosition.x == newX && tile.gridPosition.y == newY && !tile.markedForRemoval,
+        orElse: () => Tile(position: Vector2(-1, -1), value: -1, offset: Offset.zero, gridPosition: Vector2(-1, -1)), // Return a dummy tile
+      );
+
+      if (targetTile.value != -1) {
+        // If the target tile has the same value and hasn't been merged, merge the tiles
+        if (targetTile.value == value && !targetTile.merged) {
+          value *= 2;
+          merged = true; // Mark the target tile as merged
+          newGridPosition = targetTile.gridPosition.clone();
+          targetTile.markedForRemoval = true; // Mark this tile for removal
+          moved = true;
+        }
+        break;
+      } else {
+        newGridPosition = Vector2(newX, newY);
+        moved = true;
+      }
+    }
+
+    if (moved) {
+      gridPosition = newGridPosition;
+    }
+
+    return moved;
+  }
+
+  Future<void> updatePosition() async {
+    var moveEffect = MoveEffect.to(
+      Tile.calculatePosition(gridPosition, world.tileSize, world.tilePadding, world.offset),
+      EffectController(duration: world.tileMoveDuration),
+    );
+    await add(moveEffect);
+    await moveEffect.completed;
+  }
+
+    Color get color => [
+    const Color(0xFFEAE0D5),
+    const Color(0xFFEEE4DA),
+    const Color(0xFFEDE0C8),
+    const Color(0xFFF2B179),
+    const Color(0xFFF59563),
+    const Color(0xFFF67C5F),
+    const Color(0xFFF65E3B),
+    const Color(0xFFEDCF72),
+    const Color(0xFFEDCC61),
+    const Color(0xFFEDC850),
+    const Color(0xFFEDC53F),
+    const Color(0xFFEDC22E),
+  ][(value - 1) % 12];
+
+  @override
+  void render(Canvas canvas) {
+    final rect = Rect.fromLTWH(
+      position.x,
+      position.y,
+      size.x,
+      size.y
+    );
+    final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(10));
+
+    // Draw tile
+    canvas.drawRRect(rrect, Paint()..color = color);
+
+    final textSpan = TextSpan(
+      text: value.toString(),
+      style: const TextStyle(
+        color: Colors.black,
+        fontSize: 24,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+    final textPainter = TextPainter(
+      text: textSpan,
+      textAlign: TextAlign.center,
+      textDirection: TextDirection.ltr,
+    );
+    textPainter.layout();
+
+    final paintOffset = Offset(
+      rect.left + (rect.width - textPainter.width) / 2,
+      rect.top + (rect.height - textPainter.height) / 2,
+    );
+
+    textPainter.paint(canvas, paintOffset);
+  }
+}
