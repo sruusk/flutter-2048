@@ -63,6 +63,26 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
           move(1, 0);
           return true;
         },
+        LogicalKeyboardKey.keyW: (keysPressed) {
+          debugPrint('Up');
+          move(0, -1);
+          return true;
+        },
+        LogicalKeyboardKey.keyS: (keysPressed) {
+          debugPrint('Down');
+          move(0, 1);
+          return true;
+        },
+        LogicalKeyboardKey.keyA: (keysPressed) {
+          debugPrint('Left');
+          move(-1, 0);
+          return true;
+        },
+        LogicalKeyboardKey.keyD: (keysPressed) {
+          debugPrint('Right');
+          move(1, 0);
+          return true;
+        },
       }
     ));
 
