@@ -63,7 +63,7 @@ jobs:
 
       # Build web
       - name: Build Web
-        run: flutter build web
+        run: flutter build web --base-href=/flutter_2048/
 
       - name: Upload static files as artifact
         id: deployment
