@@ -153,6 +153,7 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
       final y = tile.gridPosition.y.toInt();
       final value = tile.value;
 
+      // Check if there are any adjacent tiles with the same value
       if (x > 0 && tiles.any((t) => t.gridPosition.x.toInt() == x - 1 && t.gridPosition.y.toInt() == y && t.value == value)) {
         return false;
       }
@@ -204,11 +205,12 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
       }
       await Future.wait(moveFutures);
       addTile();
-      moving = false;
       if(isGameOver()) {
-        debugPrint('Game over');
+        debugPrint('Game over with score $score');
+        debugPrint('Tiles: ${tiles.length}');
         gameOver = true;
       }
+      moving = false;
     }
 
     // Remove tiles after animation
