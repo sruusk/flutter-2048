@@ -2,7 +2,7 @@ import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_2048/flat_button.dart';
+import 'package:flutter_2048/button.dart';
 import 'package:flutter_2048/score_box.dart';
 import 'package:flutter_2048/tile.dart';
 import 'package:flame_audio/flame_audio.dart';
@@ -135,7 +135,7 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
   }
 
   void addButton(String label, Vector2 position, Vector2 size, void Function() onTap) {
-    final button = FlatButton(
+    final button = Button(
       label,
       size: size,
       position: position,

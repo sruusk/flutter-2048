@@ -3,43 +3,42 @@ import 'package:flame/input.dart';
 import 'package:flame/rendering.dart';
 import 'package:flutter/material.dart';
 
-class FlatButton extends ButtonComponent {
-  FlatButton(
+class Button extends ButtonComponent {
+  Button(
       String text, {
         super.size,
         super.onReleased,
         super.position,
       }) : super(
-    button: ButtonBackground(const Color(0xfffddeb1), text, 5),
-    buttonDown: ButtonBackground(const Color(0xffd0c6b6), text, -2),
+    button: ButtonBackground(const Color(0xfffddeb1), const Color(0xFFCAB28D), text, 1.5),
+    buttonDown: ButtonBackground(const Color(0xffE6C9A1), const Color(0xFFCAB28D), text, -1.5),
     anchor: Anchor.center,
   );
 }
 
-class ButtonBackground extends PositionComponent with HasAncestor<FlatButton> {
+class ButtonBackground extends PositionComponent with HasAncestor<Button> {
   final _paint = Paint()..style = PaintingStyle.fill;
-  final _shadowPaint = Paint()
-    ..color = Colors.black.withOpacity(0.2)
-    ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
+  final _shadowPaint = Paint();
   final String text;
   final double shadowLength;
 
   late double cornerRadius;
 
-  ButtonBackground(Color color, this.text, this.shadowLength) {
+  ButtonBackground(Color color, Color shadowColour, this.text, this.shadowLength) {
     _paint.color = color;
+    _shadowPaint.color = shadowColour;
   }
 
   @override
   void onMount() {
     super.onMount();
     size = ancestor.size;
-    cornerRadius = 0.3 * size.y;
+    cornerRadius = 0.2 * size.y;
     _paint.strokeWidth = 0.05 * size.y;
   }
 
   late final _background = RRect.fromRectAndRadius(
-    size.toRect(),
+    size.toRect().shift(Offset(-shadowLength, -shadowLength)),
     Radius.circular(cornerRadius),
   );
 
