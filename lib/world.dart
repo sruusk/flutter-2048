@@ -5,6 +5,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_2048/flat_button.dart';
 import 'package:flutter_2048/score_box.dart';
 import 'package:flutter_2048/tile.dart';
+import 'package:flame_audio/flame_audio.dart';
 import 'game.dart';
 import 'grid.dart';
 
@@ -199,6 +200,7 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
 
     if (moved) {
       moving = true;
+      FlameAudio.play('move.mp3', volume: 0.1);
       List<Future<void>> moveFutures = [];
       for (var tile in tiles) {
         moveFutures.add(tile.updatePosition());
