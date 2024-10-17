@@ -89,6 +89,13 @@ class Tile extends PositionComponent with HasWorldReference<World2048> {
     const Color(0xFFEDC22E),
   ][(value - 1) % 12];
 
+  // Shadow color is a darker version of the tile color
+  Color get shadowColor {
+    final hslColor = HSLColor.fromColor(color);
+    final lessBrightHslColor = hslColor.withLightness(hslColor.lightness * 0.6);
+    return lessBrightHslColor.toColor();
+  }
+
   @override
   void render(Canvas canvas) {
     final rect = Rect.fromLTWH(
@@ -96,10 +103,15 @@ class Tile extends PositionComponent with HasWorldReference<World2048> {
       position.y,
       size.x,
       size.y
-    );
+    ).shift(const Offset(-3, -3));
     final rrect = RRect.fromRectAndRadius(rect, const Radius.circular(10));
 
+
+    final shadowRect = rect.shift(const Offset(3, 3));
+    final shadowRRect = RRect.fromRectAndRadius(shadowRect, const Radius.circular(10));
+
     // Draw tile
+    canvas.drawRRect(shadowRRect, Paint()..color = shadowColor);
     canvas.drawRRect(rrect, Paint()..color = color);
 
     final textSpan = TextSpan(

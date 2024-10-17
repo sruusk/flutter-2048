@@ -18,6 +18,8 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
   final double tileMoveDuration = 0.1;
   late ScoreBox scoreBox;
   Offset offset = Offset.zero;
+  final gameOverIdentifier = "GameOver";
+  final highScoreIdentifier = "HighScore";
   int score = 0;
   bool gameOver = false;
   bool moving = false;
@@ -66,9 +68,14 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
 
     double buttonY = offset.dy + gridSize * (tileSize.x + tilePadding) + 50;
 
-    addButton('Restart', Vector2(0, buttonY), Vector2(100, 50), () {
+    addButton('Restart', Vector2(70, buttonY), Vector2(100, 50), () {
       debugPrint('Restarting game');
+      game.overlays.remove(gameOverIdentifier);
       game.world = World2048();
+    });
+
+    addButton('History', Vector2(-70, buttonY), Vector2(100, 50), () {
+      game.overlays.add(highScoreIdentifier);
     });
 
     scoreBox = ScoreBox(
@@ -91,17 +98,21 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
   }
   @override
   void onDragEnd(DragEndEvent event) {
-    if (dragEvent.x.abs() > dragEvent.y.abs()) {
-      if (dragEvent.x > 0) {
-        move(1, 0);
+    super.onDragEnd(event);
+    const double dragThreshold = 30.0;
+    if (dragEvent.length > dragThreshold) {
+      if (dragEvent.x.abs() > dragEvent.y.abs()) {
+        if (dragEvent.x > 0) {
+          move(1, 0);
+        } else {
+          move(-1, 0);
+        }
       } else {
-        move(-1, 0);
-      }
-    } else {
-      if (dragEvent.y > 0) {
-        move(0, 1);
-      } else {
-        move(0, -1);
+        if (dragEvent.y > 0) {
+          move(0, 1);
+        } else {
+          move(0, -1);
+        }
       }
     }
   }
@@ -145,6 +156,7 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
   }
 
   bool isGameOver() {
+    print('Tiles: ${tiles.length} Grid size: ${gridSize * gridSize}');
     if (tiles.length < gridSize * gridSize) {
       return false;
     }
@@ -207,22 +219,25 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
       }
       await Future.wait(moveFutures);
       addTile();
+
+      // Remove tiles after animation
+      for (var tile in tiles) {
+        if (tile.markedForRemoval) {
+          score += tile.value * 2;
+          scoreBox.updateScore(score);
+          remove(tile);
+        }
+      }
+      tiles.removeWhere((tile) => tile.markedForRemoval);
+
       if(isGameOver()) {
         debugPrint('Game over with score $score');
         debugPrint('Tiles: ${tiles.length}');
         gameOver = true;
+        game.newScore(score, tiles.map((tile) => tile.value).reduce((value, element) => value > element ? value : element));
+        game.overlays.add(gameOverIdentifier);
       }
       moving = false;
     }
-
-    // Remove tiles after animation
-    for (var tile in tiles) {
-      if (tile.markedForRemoval) {
-        score += tile.value * 2;
-        scoreBox.updateScore(score);
-        remove(tile);
-      }
-    }
-    tiles.removeWhere((tile) => tile.markedForRemoval);
   }
 }
