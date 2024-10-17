@@ -38,7 +38,7 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
     super.onLoad();
     debugPrint('Loading world');
 
-    add(Grid(gridSize: gridSize, tileSize: tileSize.x, tilePadding: tilePadding, offset: offset));
+    add(Grid(offset: offset));
     addTile();
     addTile();
     add(KeyboardListenerComponent(
@@ -101,8 +101,8 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
     scoreBox = ScoreBox(
       title: 'Flutter 2048',
       score: score,
-      position: Vector2(offset.dx / 2, offset.dy),
-      size: Vector2(gridSize * (tileSize.x + tilePadding) - tilePadding, 100),
+      position: Vector2((offset.dx - tilePadding) / 2, (offset.dy - tilePadding) / 2 - 60),
+      size: Vector2(gridSize * (tileSize.x + tilePadding) + tilePadding, 100),
     );
     add(scoreBox);
   }
@@ -110,11 +110,12 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
   Vector2 dragEvent = Vector2.zero();
   @override
   void onDragStart(DragStartEvent event) {
+    super.onDragStart(event);
     dragEvent = Vector2.zero();
   }
   @override
   void onDragUpdate(DragUpdateEvent event) {
-    dragEvent += event.delta;
+    dragEvent += event.localDelta;
   }
   @override
   void onDragEnd(DragEndEvent event) {

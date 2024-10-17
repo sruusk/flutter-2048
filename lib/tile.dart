@@ -4,10 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_2048/game.dart';
 import 'package:flutter_2048/world.dart';
 
-class Tile extends PositionComponent with HasWorldReference<World2048> {
+class Tile extends PositionComponent with HasWorldReference<World2048>, HasGameReference<Game2048> {
   int value;
   Vector2 gridPosition;
   Offset offset;
+  final int gridSize = Game2048.gridSize;
+  final double tilePadding = Game2048.tilePadding;
+  Vector2 tileSize = Game2048.tileSize;
   bool markedForRemoval = false; // Whether this tile should be removed from the grid in the next update
   bool merged = false; // Whether this tile has been merged with another tile during this move
 
@@ -19,7 +22,7 @@ class Tile extends PositionComponent with HasWorldReference<World2048> {
 
   bool move(int dx, int dy) {
     bool moved = false;
-    int maxLoops = world.gridSize * world.gridSize;
+    int maxLoops = gridSize * gridSize;
     Vector2 newGridPosition = gridPosition.clone();
 
     while (true) {
@@ -32,7 +35,7 @@ class Tile extends PositionComponent with HasWorldReference<World2048> {
       final newY = newGridPosition.y + dy;
 
       // Check if the new position is within the grid boundaries
-      if (newX < 0 || newX >= world.gridSize || newY < 0 || newY >= world.gridSize) {
+      if (newX < 0 || newX >= gridSize || newY < 0 || newY >= gridSize) {
         break;
       }
 
@@ -67,7 +70,7 @@ class Tile extends PositionComponent with HasWorldReference<World2048> {
 
   Future<void> updatePosition() async {
     var moveEffect = MoveEffect.to(
-      Tile.calculatePosition(gridPosition, world.tileSize, world.tilePadding, world.offset),
+      Tile.calculatePosition(gridPosition, tileSize, tilePadding, world.offset),
       EffectController(duration: world.tileMoveDuration),
     );
     await add(moveEffect);

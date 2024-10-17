@@ -1,5 +1,6 @@
+import 'dart:math';
+
 import 'package:flame/game.dart';
-import 'package:flame/src/camera/world.dart';
 import 'package:flame_splash_screen/flame_splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_2048/highscore_overlay.dart';
@@ -51,28 +52,35 @@ class GameScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: GameWidget(
-          game: Game2048(),
-          overlayBuilderMap: {
-            'HighScore': (BuildContext context, Game2048 game) {
-              return HighScoreOverlay(
-                  highScores: game.highScores, onRestart: () => {
-                    game.overlays.remove('HighScore'),
-                  }
-              );
+        child: LayoutBuilder(builder: (context, constraints) {
+          final width = constraints.maxWidth;
+          final height = constraints.maxHeight;
+          debugPrint('Width: $width, Height: $height');
+          debugPrint('TileSize: ${min(Game2048.getTileSizeForWidth(width), Game2048.getTileSizeForHeight(height))}');
+
+          return GameWidget(
+            game: Game2048(),
+            overlayBuilderMap: {
+              'HighScore': (BuildContext context, Game2048 game) {
+                return HighScoreOverlay(
+                    highScores: game.highScores, onRestart: () => {
+                  game.overlays.remove('HighScore'),
+                }
+                );
+              },
+              'GameOver': (BuildContext context, Game2048 game) {
+                return game.lastGameScore != null ? GameOver(
+                  score: game.lastGameScore,
+                  close: () {
+                    game.overlays.remove('GameOver');
+                  },
+                ) : const Center(
+                  child: CircularProgressIndicator(),
+                );
+              },
             },
-            'GameOver': (BuildContext context, Game2048 game) {
-              return game.lastGameScore != null ? GameOver(
-                score: game.lastGameScore,
-                close: () {
-                  game.overlays.remove('GameOver');
-                },
-              ) : const Center(
-                child: CircularProgressIndicator(),
-              );
-            },
-          },
-        ),
+          );
+        }),
       ),
     );
   }

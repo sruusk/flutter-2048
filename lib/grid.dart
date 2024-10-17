@@ -2,17 +2,15 @@ import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_2048/game.dart';
 
-class Grid extends Component {
-  final int gridSize;
-  final double tileSize;
-  final double tilePadding;
-  final double borderSize = 10.0; // Size of the border around the grid
+class Grid extends Component with HasGameReference<Game2048> {
+  final int gridSize = Game2048.gridSize;
+  final double tileSize = Game2048.tileSize.x;
+  final double tilePadding = Game2048.tilePadding;
+  final double borderSize = Game2048.tilePadding; // Size of the border around the grid
+  final double shadowDepth = 4; // Depth of the shadow
   final Offset offset; // Offset to center the grid
 
   Grid({
-    required this.gridSize,
-    required this.tileSize,
-    required this.tilePadding,
     required this.offset,
   });
 
@@ -25,8 +23,8 @@ class Grid extends Component {
     // Draw the large background rectangle with rounded corners
     final backgroundRectShadow = RRect.fromRectAndRadius(
       Rect.fromLTWH(
-        offset.dx - borderSize + 3,
-        offset.dy - borderSize + 3,
+        offset.dx - borderSize + shadowDepth,
+        offset.dy - borderSize + shadowDepth,
         gridSize * (tileSize + tilePadding) - tilePadding + 2 * borderSize,
         gridSize * (tileSize + tilePadding) - tilePadding + 2 * borderSize,
       ),
@@ -59,7 +57,7 @@ class Grid extends Component {
 
         // Draw inset shadow
         canvas.drawRRect(
-          cellRect.shift(const Offset(-3, -3)),
+          cellRect.shift(Offset(-shadowDepth, -shadowDepth)),
           paint..color = Colors.black.withOpacity(0.2),
         );
 

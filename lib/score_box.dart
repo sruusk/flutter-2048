@@ -1,5 +1,6 @@
 import 'package:flame/components.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_2048/game.dart';
 
 class ScoreBox extends PositionComponent {
   final String title;
@@ -43,9 +44,9 @@ class ScoreBox extends PositionComponent {
     // Draw the score box
     final cellRect = RRect.fromRectAndRadius(
       Rect.fromLTWH(
-        position.x + size.x - 210,
+        position.x + size.x - Game2048.mainWidth + 80,
         position.y + size.y - 50,
-        200,
+        Game2048.mainWidth - 90,
         40,
       ),
       const Radius.circular(10),
@@ -98,7 +99,7 @@ class ScoreBox extends PositionComponent {
 
     final scoreLabelOffset = Offset(
       position.x + 10,
-      position.y + size.y - 50,
+      position.y + size.y - 45,
     );
     scoreLabelPainter.paint(canvas, scoreLabelOffset);
 
