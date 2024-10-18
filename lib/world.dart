@@ -239,7 +239,6 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
         moveFutures.add(tile.updatePosition());
       }
       await Future.wait(moveFutures);
-      addTile();
 
       // Remove tiles after animation
       for (var tile in tiles) {
@@ -250,6 +249,8 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
         }
       }
       tiles.removeWhere((tile) => tile.markedForRemoval);
+
+      addTile();
 
       if(isGameOver()) {
         debugPrint('Game over with score $score');
