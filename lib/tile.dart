@@ -139,4 +139,28 @@ class Tile extends PositionComponent with HasWorldReference<World2048>, HasGameR
 
     textPainter.paint(canvas, paintOffset);
   }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'value': value,
+      'gridPosition': gridPosition.toJson(),
+    };
+  }
+
+  static Tile fromJson(Map<String, dynamic> json) {
+    return Tile(
+      value: json['value'],
+      gridPosition: Vector2(json['gridPosition']['x'], json['gridPosition']['y']),
+      offset: Offset.zero,
+    );
+  }
+}
+
+extension on Vector2 {
+  Map<String, dynamic> toJson() {
+    return {
+      'x': x,
+      'y': y,
+    };
+  }
 }

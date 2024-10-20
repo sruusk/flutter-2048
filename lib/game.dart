@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flame/events.dart';
 import 'package:flame/game.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_2048/tile.dart';
 import 'dart:math';
 import 'package:flutter_2048/world.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -22,6 +23,7 @@ class Game2048 extends FlameGame with HasKeyboardHandlerComponents {
 
   Game2048() : super(world: World2048()) {
     loadHighScores();
+    loadSavedGame();
   }
 
   // Calculate the minimum width of the game window
@@ -45,6 +47,20 @@ class Game2048 extends FlameGame with HasKeyboardHandlerComponents {
       final highScoresJson = prefs.getString('highScores');
       if (highScoresJson != null) {
         highScores = HighScore.fromJsonList(json.decode(highScoresJson));
+      }
+    });
+  }
+
+  void loadSavedGame() {
+    SharedPreferences.getInstance().then((prefs) {
+      final tilesJson = prefs.getString('tiles');
+      final score = prefs.getInt('score');
+
+      debugPrint('Loading saved game');
+
+      if (tilesJson != null && score != null) {
+        final tiles = List<Tile>.from(json.decode(tilesJson).map((tile) => Tile.fromJson(tile)));
+        world = World2048(tiles: tiles, score: score);
       }
     });
   }

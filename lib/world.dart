@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flame/components.dart';
 import 'package:flame/events.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_2048/button.dart';
 import 'package:flutter_2048/score_box.dart';
 import 'package:flutter_2048/tile.dart';
 import 'package:flame_audio/flame_audio.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'game.dart';
 import 'grid.dart';
 
@@ -17,14 +20,17 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
   final List<Tile> tiles = [];
   final double tileMoveDuration = 0.1;
   late ScoreBox scoreBox;
+  late Future<SharedPreferences> preferences = SharedPreferences.getInstance();
   Offset offset = Offset.zero;
   final gameOverIdentifier = "GameOver";
-  final highScoreIdentifier = "HighScore";
+  final leaderboardIdentifier = "Leaderboard";
   int score = 0;
   bool gameOver = false;
   bool moving = false;
 
-  World2048() {
+  World2048({List<Tile>? tiles, int? score}) {
+    this.tiles.addAll(tiles ?? []);
+    this.score = score ?? 0;
     // Calculate the offset to center the grid
     final gridWidth = gridSize * (tileSize.x + tilePadding) - tilePadding;
     final gridHeight = gridSize * (tileSize.y + tilePadding) - tilePadding;
@@ -39,8 +45,17 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
     debugPrint('Loading world');
 
     add(Grid(offset: offset));
-    addTile();
-    addTile();
+    if(tiles.isEmpty) {
+      addTile();
+      addTile();
+    } else {
+      for (var tile in tiles) {
+        tile.offset = offset;
+        tile.position = Tile.calculatePosition(tile.gridPosition, tileSize, tilePadding, offset);
+        add(tile);
+      }
+      debugPrint('Loaded ${tiles.length} tiles from storage');
+    }
     add(KeyboardListenerComponent(
       keyUp: {
         LogicalKeyboardKey.arrowUp: (keysPressed) {
@@ -88,14 +103,18 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
 
     double buttonY = offset.dy + gridSize * (tileSize.x + tilePadding) + 50;
 
-    addButton('Restart', Vector2(70, buttonY), Vector2(100, 50), () {
+    addButton('Restart', Vector2(100, buttonY), Vector2(100, 50), () {
       debugPrint('Restarting game');
-      game.overlays.remove(gameOverIdentifier);
-      game.world = World2048();
+      preferences.then((prefs) {
+        prefs.remove('tiles');
+        prefs.remove('score');
+        game.overlays.remove(gameOverIdentifier);
+        game.world = World2048();
+      });
     });
 
-    addButton('History', Vector2(-70, buttonY), Vector2(100, 50), () {
-      game.overlays.add(highScoreIdentifier);
+    addButton('Leaderboard', Vector2(-70, buttonY), Vector2(170, 50), () {
+      game.overlays.add(leaderboardIdentifier);
     });
 
     scoreBox = ScoreBox(
@@ -105,6 +124,38 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
       size: Vector2(gridSize * (tileSize.x + tilePadding) + tilePadding, 100),
     );
     add(scoreBox);
+  }
+
+  void saveState() {
+    super.onRemove();
+
+    // Save the game state (tiles and current score) to shared preferences
+    if(!gameOver) {
+      final tilesJson = json.encode(tiles.map((tile) => tile.toJson()).toList());
+
+      preferences.then((prefs) {
+        prefs.setString('tiles', tilesJson);
+        prefs.setInt('score', score);
+      });
+    } else {
+      // Remove stored game state
+      preferences.then((prefs) {
+        prefs.remove('tiles');
+        prefs.remove('score');
+      });
+    }
+  }
+
+  onGameOver() {
+    // Remove stored game state
+    preferences.then((prefs) {
+      prefs.remove('tiles');
+      prefs.remove('score');
+    });
+
+    gameOver = true;
+    game.newScore(score, tiles.map((tile) => tile.value).reduce((value, element) => value > element ? value : element));
+    game.overlays.add(gameOverIdentifier);
   }
 
   Vector2 dragEvent = Vector2.zero();
@@ -177,7 +228,7 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
   }
 
   bool isGameOver() {
-    print('Tiles: ${tiles.length} Grid size: ${gridSize * gridSize}');
+    debugPrint('Tiles: ${tiles.length} Grid size: ${gridSize * gridSize}');
     if (tiles.length < gridSize * gridSize) {
       return false;
     }
@@ -255,9 +306,9 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
       if(isGameOver()) {
         debugPrint('Game over with score $score');
         debugPrint('Tiles: ${tiles.length}');
-        gameOver = true;
-        game.newScore(score, tiles.map((tile) => tile.value).reduce((value, element) => value > element ? value : element));
-        game.overlays.add(gameOverIdentifier);
+        onGameOver();
+      } else {
+        saveState();
       }
       moving = false;
     }
