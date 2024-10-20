@@ -1,9 +1,7 @@
-import 'dart:math';
-
 import 'package:flame/game.dart';
 import 'package:flame_splash_screen/flame_splash_screen.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_2048/highscore_overlay.dart';
+import 'package:flutter_2048/leaderboard_overlay.dart';
 import 'game.dart';
 import 'game_over.dart';
 
@@ -52,35 +50,27 @@ class GameScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: Center(
-        child: LayoutBuilder(builder: (context, constraints) {
-          final width = constraints.maxWidth;
-          final height = constraints.maxHeight;
-          debugPrint('Width: $width, Height: $height');
-          debugPrint('TileSize: ${min(Game2048.getTileSizeForWidth(width), Game2048.getTileSizeForHeight(height))}');
-
-          return GameWidget(
-            game: Game2048(),
-            overlayBuilderMap: {
-              'HighScore': (BuildContext context, Game2048 game) {
-                return HighScoreOverlay(
-                    highScores: game.highScores, onRestart: () => {
-                  game.overlays.remove('HighScore'),
-                }
-                );
-              },
-              'GameOver': (BuildContext context, Game2048 game) {
-                return game.lastGameScore != null ? GameOver(
-                  score: game.lastGameScore,
-                  close: () {
-                    game.overlays.remove('GameOver');
-                  },
-                ) : const Center(
-                  child: CircularProgressIndicator(),
-                );
-              },
+        child: GameWidget(
+          game: Game2048(),
+          overlayBuilderMap: {
+            'Leaderboard': (BuildContext context, Game2048 game) {
+              return LeaderboardOverlay(onRestart: () => {
+                game.overlays.remove('Leaderboard'),
+              }
+              );
             },
-          );
-        }),
+            'GameOver': (BuildContext context, Game2048 game) {
+              return game.lastGameScore != null ? GameOver(
+                score: game.lastGameScore,
+                close: () {
+                  game.overlays.remove('GameOver');
+                },
+              ) : const Center(
+                child: CircularProgressIndicator(),
+              );
+            },
+          },
+        ),
       ),
     );
   }
@@ -104,21 +94,6 @@ class _SplashScreenGameState extends State<SplashScreenGame> {
             child: Image(image: AssetImage('assets/images/lockup_built-w-flutter_wht.png')),
           );
         },
-        // showAfter: (BuildContext context) {
-        //   return Padding(
-        //     padding: const EdgeInsets.all(30.0),
-        //     child: Column(
-        //       mainAxisAlignment: MainAxisAlignment.center,
-        //       children: [
-        //         Text(
-        //           'How to play',
-        //           style: Theme.of(context).textTheme.headlineSmall,
-        //         ),
-        //
-        //       ],
-        //     )
-        //   );
-        // },
         theme: FlameSplashTheme.dark,
         onFinish: (context) => Navigator.pushReplacement<void, void>(
           context,
