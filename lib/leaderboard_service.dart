@@ -151,7 +151,7 @@ class LeaderboardService {
       final result = await databases.listDocuments(
         databaseId: 'leaderboard',
         collectionId: '6714c34f000513669d7b',
-        queries: [Query.orderDesc('largestTile'), Query.limit(10)],
+        queries: [Query.orderDesc('score'), Query.limit(5)],
       );
       return result.documents;
     } catch (e) {
