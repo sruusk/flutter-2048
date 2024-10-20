@@ -44,6 +44,9 @@ class World2048 extends World with HasGameReference<Game2048>, KeyboardHandler, 
     super.onLoad();
     debugPrint('Loading world');
 
+    game.newScore(69420, 2048);
+    game.overlays.add(gameOverIdentifier);
+
     add(Grid(offset: offset));
     if(tiles.isEmpty) {
       addTile();
