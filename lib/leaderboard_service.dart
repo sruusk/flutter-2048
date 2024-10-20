@@ -172,6 +172,19 @@ class LeaderboardService {
     }
   }
 
+  Future<bool> usernameExists(String name) async {
+    try {
+      final result = await databases.listDocuments(
+        databaseId: 'leaderboard',
+        collectionId: '6714c34f000513669d7b',
+        queries: [Query.equal('name', name)],
+      );
+      return result.total > 0;
+    } catch (e) {
+      throw Exception('Failed to check username existence: $e');
+    }
+  }
+
   Future<String?> getStoredUserId() async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getString('userId');

@@ -48,6 +48,17 @@ class _GameOverState extends State<GameOver> {
     }
 
     try {
+      LeaderboardService leaderboardService = LeaderboardService();
+      bool exists = await leaderboardService.usernameExists(username);
+      if (exists) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Username already exists')),
+          );
+        }
+        return;
+      }
+
       _userId = await authenticateWithPassword(username);
       await _submitScore();
     } catch (e) {
